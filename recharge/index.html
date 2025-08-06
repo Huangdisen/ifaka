@@ -1,0 +1,302 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>代理网站</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Microsoft YaHei', Arial, sans-serif;
+            overflow: hidden;
+        }
+
+        /* iframe样式 */
+        #main-iframe {
+            width: 100vw;
+            height: 100vh;
+            border: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            z-index: 1;
+        }
+
+        /* 悬浮窗样式 */
+        .floating-window {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 300px;
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 10px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+            z-index: 10001;
+            user-select: none;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+        }
+
+        /* 背景遮罩 */
+        .backdrop {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 10000;
+            opacity: 0;
+            visibility: hidden;
+            transition: all 0.3s ease;
+        }
+
+        .floating-window:not(.minimized) ~ .backdrop {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        /* 最小化状态样式 */
+        .floating-window.minimized {
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #007bff 0%, #0056b3 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(0, 123, 255, 0.4);
+            bottom: 20px;
+            right: 20px;
+            top: auto;
+            left: auto;
+            transform: none;
+        }
+
+        .floating-window.minimized:hover {
+            transform: scale(1.1);
+            box-shadow: 0 6px 25px rgba(0, 123, 255, 0.6);
+        }
+
+        .floating-window.minimized .floating-header {
+            display: none;
+        }
+
+        .floating-window.minimized .floating-content {
+            display: none;
+        }
+
+        /* 客服图标样式 */
+        .customer-service-icon {
+            font-size: 28px;
+            color: white;
+            display: none;
+        }
+
+        .floating-window.minimized .customer-service-icon {
+            display: block;
+        }
+
+        /* 悬浮窗头部 */
+        .floating-header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 12px 15px;
+            border-radius: 10px 10px 0 0;
+            font-weight: bold;
+            font-size: 14px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .floating-header .controls {
+            display: flex;
+            gap: 8px;
+        }
+
+        .control-btn {
+            padding: 4px 8px;
+            height: 24px;
+            border-radius: 4px;
+            border: none;
+            cursor: pointer;
+            font-size: 11px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: opacity 0.2s;
+            white-space: nowrap;
+        }
+
+        .control-btn:hover {
+            opacity: 0.8;
+        }
+
+        .minimize-btn {
+            background: #ffc107;
+            color: #000;
+        }
+
+        /* 悬浮窗内容 */
+        .floating-content {
+            padding: 20px;
+            max-height: 400px;
+            overflow-y: auto;
+        }
+
+        /* 信息显示 */
+        .info-section {
+            background: #f8f9fa;
+            padding: 12px;
+            border-radius: 5px;
+            margin-bottom: 15px;
+            font-size: 13px;
+        }
+
+        .info-title {
+            font-weight: bold;
+            color: #495057;
+            margin-bottom: 5px;
+        }
+
+        .info-text {
+            color: #6c757d;
+            line-height: 1.4;
+                }
+
+        /* 响应式设计 */
+        @media (max-width: 768px) {
+            .floating-window {
+                width: calc(100vw - 20px);
+            }
+            
+            .floating-window.minimized {
+                right: 10px;
+                bottom: 10px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- 主要内容iframe -->
+    <iframe id="main-iframe" src="https://987ai.vip" title="代理网站"></iframe>
+
+                <!-- 悬浮窗 -->
+    <div class="floating-window minimized" id="floatingWindow">
+        <!-- 客服图标 -->
+        <div class="customer-service-icon" onclick="toggleMinimize()">💬</div>
+        
+        <div class="floating-header" id="floatingHeader">
+            <span>🧭 导航栏</span>
+            <div class="controls">
+                <button class="control-btn minimize-btn" onclick="toggleMinimize(); event.stopPropagation();">最小化</button>
+            </div>
+        </div>
+            <div class="floating-content" id="floatingContent">
+                <div class="info-section">
+                    <div class="info-title">📞 客服信息</div>
+                    <div class="info-text">
+                        <a href="tel:400-123-4567" style="color: #007bff; text-decoration: none;">📱 客服电话: 400-123-4567</a><br>
+                        <a href="mailto:service@987ai.vip" style="color: #007bff; text-decoration: none;">📧 邮箱: service@987ai.vip</a><br>
+                        <a href="https://wpa.qq.com/msgrd?v=3&uin=123456789&site=qq&menu=yes" target="_blank" style="color: #007bff; text-decoration: none;">💬 QQ客服: 123456789</a><br>
+                        <a href="https://work.weixin.qq.com/" target="_blank" style="color: #007bff; text-decoration: none;">🔗 企业微信</a>
+                    </div>
+                </div>
+
+                <div class="info-section">
+                    <div class="info-title">🎯 自定义区域</div>
+                    <div class="info-text">
+                        您可以在这里添加自己的内容，比如快捷链接、工具按钮等。
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    <!-- 背景遮罩 -->
+    <div class="backdrop" id="backdrop"></div>
+
+    <script>
+        const floatingWindow = document.getElementById('floatingWindow');
+        const backdrop = document.getElementById('backdrop');
+
+        // 为最小化状态的窗口添加点击事件
+        floatingWindow.addEventListener('click', function(e) {
+            if (floatingWindow.classList.contains('minimized')) {
+                e.stopPropagation();
+                toggleMinimize();
+            } else {
+                // 展开状态下点击窗口内容不关闭
+                e.stopPropagation();
+            }
+        });
+
+        // 点击遮罩关闭导航栏
+        backdrop.addEventListener('click', function() {
+            if (!floatingWindow.classList.contains('minimized')) {
+                toggleMinimize();
+            }
+        });
+
+        // 最小化功能
+        function toggleMinimize() {
+            const window = document.getElementById('floatingWindow');
+            
+            if (window.classList.contains('minimized')) {
+                window.classList.remove('minimized');
+            } else {
+                window.classList.add('minimized');
+            }
+        }
+
+
+
+
+
+
+
+
+
+        // 动态处理URL参数
+        function updateIframeSrc() {
+            const iframe = document.getElementById('main-iframe');
+            const currentUrl = window.location.href;
+            const baseUrl = 'https://987ai.vip';
+            
+            // 获取当前页面的路径和查询参数
+            const urlPath = window.location.pathname;
+            const urlSearch = window.location.search;
+            
+            // 构建新的iframe src
+            let newSrc = baseUrl;
+            
+            // 如果有路径且不是根路径，添加路径
+            if (urlPath && urlPath !== '/') {
+                newSrc += urlPath;
+            }
+            
+            // 如果有查询参数，添加查询参数
+            if (urlSearch) {
+                newSrc += urlSearch;
+            }
+            
+            iframe.src = newSrc;
+        }
+
+        // 页面加载完成提示
+        window.addEventListener('load', () => {
+            updateIframeSrc();
+            console.log('代理页面加载完成');
+            console.log('点击右下角客服图标展开导航栏，点击遮罩或最小化按钮关闭');
+        });
+    </script>
+</body>
+</html> 
