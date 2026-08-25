@@ -1,51 +1,81 @@
-# iFaka · 987AI API v1.1 安全前端
+# iFaka 代理网站
 
-这是一个直接调用 https://987ai.vip 用户端 API 的静态前端，用于卡密查询、激活、普通订阅刷新和 Claude 订阅刷新。
+这是一个通过iframe嵌入目标网站的代理页面，提供悬浮客服窗口功能。
 
-项目已从旧版 iframe 包装页迁移为原生 API 客户端。卡密、Session、Token、SessionKey 和用户 ID 不再进入 URL，也不会写入浏览器存储、日志或统计平台。
+## 🚀 Vercel部署指南
 
-## 已实现
+### 1. 准备工作
+确保您已经安装了Node.js和Vercel CLI：
+```bash
+npm install -g vercel
+```
 
-- POST /api/check：查询卡密与产品信息
-- GET /api/service_status：按查询结果检查服务状态
-- POST /api/activate：同步激活，提交前二次确认
-- POST /api/refresh-subscription：普通订阅刷新
-- POST /api/claude_refresh：先验证 Claude 卡密，再刷新订阅
-- HTTP 状态、JSON success、业务 code 的分层错误处理
-- upstream.uncertain、超时和 5xx 场景禁止自动重试
-- 卡密工具改为“地址与卡密分离”，仅本地处理旧链接
-- API v1.1 文档摘要页与完整 Markdown 文档
-- CSP、无 Referrer、禁止被 iframe 嵌入、禁止缓存敏感页面
+### 2. 部署到Vercel
+在项目根目录运行：
+```bash
+# 登录Vercel（如果尚未登录）
+vercel login
 
-## 批量功能状态
+# 部署到生产环境
+vercel --prod
+```
 
-POST /api/batch_check 和 POST /api/batch_exchange 需要有效的一次性 hCaptcha Token。
+### 3. 配置自定义域名
 
-当前 API 文档没有提供 hCaptcha sitekey，因此生产前端按 fail-closed 原则禁用批量提交，不会加载验证组件或发送批量请求。获得官方 sitekey、登记正式域名并完成专用测试卡验证后再开放。
+#### 在Vercel控制台配置：
+1. 访问 [Vercel Dashboard](https://vercel.com/dashboard)
+2. 找到您的项目 `ifaka-proxy`
+3. 进入项目设置页面
+4. 点击 "Domains" 选项卡
+5. 添加您的自定义域名
 
-## 本地验证
+#### 域名DNS配置：
+在您的域名服务商处添加以下DNS记录：
 
-需要 Node.js 20 或更高版本，以及 Vercel CLI：
+**如果是根域名 (example.com)：**
+```
+Type: A
+Name: @
+Value: 76.76.19.88
+```
 
-    npm run verify
-    vercel dev --listen 3000
+**如果是子域名 (subdomain.example.com)：**
+```
+Type: CNAME
+Name: subdomain
+Value: cname.vercel-dns.com
+```
 
-本地服务默认运行在 http://localhost:3000。
+#### 或者使用Vercel的nameservers：
+```
+ns1.vercel-dns.com
+ns2.vercel-dns.com
+```
 
-## 部署
+### 4. 验证部署
+- 部署完成后访问Vercel提供的域名测试功能
+- DNS生效后访问您的自定义域名
 
-Vercel 项目 ifaka-proxy 已绑定 GitHub 仓库 Huangdisen/ifaka，生产分支为 main。推送 main 后由 Vercel Git Integration 自动创建生产部署。
+## ⚙️ 项目配置
 
-主要生产域名：
+### vercel.json 配置说明
+- 将所有路由重定向到 `index.html`
+- 添加了安全头部配置
+- 静态文件构建配置
 
-- https://new.bearaiapp.com
-- https://ios.891014.best
-- https://ifaka-proxy.vercel.app
+### 注意事项
+1. 确保目标网站支持iframe嵌入（检查X-Frame-Options）
+2. 某些网站可能有反代理保护机制
+3. 建议在部署前测试目标网站的可访问性
 
-## 文档
+## 🔧 本地开发
+```bash
+# 安装依赖
+npm install
 
-完整接口文档：[docs/用户端API文档.md](docs/用户端API文档.md)
+# 本地开发服务器
+vercel dev
+```
 
-文档版本：v1.1
-
-更新日期：2026-08-24
+## 📞 联系信息
+如需修改客服信息，请编辑 `index.html` 中的相关部分。

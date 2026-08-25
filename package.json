@@ -1,16 +1,21 @@
 {
-  "name": "ifaka-secure-client",
-  "version": "1.1.0",
-  "private": true,
-  "type": "module",
-  "description": "987AI API v1.1 安全卡密查询、激活与订阅刷新前端",
+  "name": "ifaka-proxy",
+  "version": "1.0.0",
+  "description": "代理网站 - 通过iframe嵌入目标网站",
+  "main": "index.html",
   "scripts": {
-    "serve": "python3 -m http.server 3000",
-    "build": "node --test && node scripts/build.mjs",
-    "test": "node --test",
-    "verify": "npm run build"
+    "dev": "vercel dev",
+    "build": "echo 'Static site - no build needed'",
+    "deploy": "vercel --prod"
   },
-  "engines": {
-    "node": "22.x"
+  "keywords": [
+    "proxy",
+    "iframe",
+    "website"
+  ],
+  "author": "Your Name",
+  "license": "MIT",
+  "devDependencies": {
+    "vercel": "^32.0.0"
   }
 }
