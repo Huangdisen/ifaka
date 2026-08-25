@@ -1,295 +1,574 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="zh-CN">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>可屯卡密式充值系统</title>
-    <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="referrer" content="no-referrer">
+    <meta name="robots" content="noindex,nofollow,noarchive">
+    <meta
+      name="description"
+      content="基于 987AI API v1.1 的安全卡密查询、激活与订阅刷新前端。"
+    >
+    <title>可屯式卡密自助服务</title>
+    <script src="/assets/sanitize-url.js"></script>
+    <link rel="stylesheet" href="/assets/styles.css">
+    <script type="module" src="/assets/app.js"></script>
+  </head>
+  <body>
+    <a class="skip-link" href="#main-content">跳到主要内容</a>
 
-        body {
-            font-family: 'Microsoft YaHei', Arial, sans-serif;
-            overflow: hidden;
-        }
+    <header class="site-header">
+      <div class="site-shell header-inner">
+        <a class="brand" href="/" aria-label="可屯式卡密自助服务首页">
+          <svg viewBox="0 0 32 32" aria-hidden="true">
+            <path d="M6 7.5A3.5 3.5 0 0 1 9.5 4h13A3.5 3.5 0 0 1 26 7.5v3.1a3.3 3.3 0 0 0 0 6.8v3.1a3.5 3.5 0 0 1-3.5 3.5h-13A3.5 3.5 0 0 1 6 20.5v-3.1a3.3 3.3 0 0 0 0-6.8V7.5Z"/>
+            <path d="M13 9v14M19 9v14"/>
+          </svg>
+          <span>
+            <strong>可屯式卡密</strong>
+            <small>安全自助服务</small>
+          </span>
+        </a>
 
-        /* iframe样式 */
-        #main-iframe {
-            width: 100vw;
-            height: 100vh;
-            border: none;
-            position: fixed;
-            top: 0;
-            left: 0;
-            z-index: 1;
-        }
+        <nav class="header-nav" aria-label="主导航">
+          <a aria-current="page" href="/">自助服务</a>
+          <a href="/api-docs">API 文档</a>
+          <a href="/card-tool">卡密工具</a>
+        </nav>
+      </div>
+    </header>
 
-        /* 悬浮窗样式 */
-        .floating-window {
-            position: fixed;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            width: 300px;
-            background: rgba(255, 255, 255, 0.95);
-            border-radius: 10px;
-            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
-            z-index: 10001;
-            user-select: none;
-            backdrop-filter: blur(10px);
-            border: 1px solid rgba(255, 255, 255, 0.3);
-        }
+    <main id="main-content">
+      <section class="hero">
+        <div class="site-shell hero-grid">
+          <div class="hero-copy">
+            <span class="eyebrow">987AI 客户端 API v1.1</span>
+            <h1>卡密与账户凭证，<br>只在本次操作中使用</h1>
+            <p>
+              卡密通过 JSON 请求直接提交至 987AI，不进入网址、浏览器存储或第三方统计。
+              激活与刷新请求不会自动重试。
+            </p>
+          </div>
 
-        /* 背景遮罩 */
-        .backdrop {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(0, 0, 0, 0.5);
-            z-index: 10000;
-            opacity: 0;
-            visibility: hidden;
-            transition: all 0.3s ease;
-        }
-
-        .floating-window:not(.minimized) ~ .backdrop {
-            opacity: 1;
-            visibility: visible;
-        }
-
-        /* 最小化状态样式 */
-        .floating-window.minimized {
-            width: 60px;
-            height: 60px;
-            border-radius: 50%;
-            background: linear-gradient(135deg, #007bff 0%, #0056b3 100%);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            box-shadow: 0 4px 15px rgba(0, 123, 255, 0.4);
-            bottom: 20px;
-            right: 20px;
-            top: auto;
-            left: auto;
-            transform: none;
-        }
-
-        .floating-window.minimized:hover {
-            transform: scale(1.1);
-            box-shadow: 0 6px 25px rgba(0, 123, 255, 0.6);
-        }
-
-        .floating-window.minimized .floating-header {
-            display: none;
-        }
-
-        .floating-window.minimized .floating-content {
-            display: none;
-        }
-
-        /* 客服图标样式 */
-        .customer-service-icon {
-            font-size: 28px;
-            color: white;
-            display: none;
-        }
-
-        .floating-window.minimized .customer-service-icon {
-            display: block;
-        }
-
-        /* 悬浮窗头部 */
-        .floating-header {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-            padding: 12px 15px;
-            border-radius: 10px 10px 0 0;
-            font-weight: bold;
-            font-size: 14px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-
-        .floating-header .controls {
-            display: flex;
-            gap: 8px;
-        }
-
-        .control-btn {
-            padding: 4px 8px;
-            height: 24px;
-            border-radius: 4px;
-            border: none;
-            cursor: pointer;
-            font-size: 11px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            transition: opacity 0.2s;
-            white-space: nowrap;
-        }
-
-        .control-btn:hover {
-            opacity: 0.8;
-        }
-
-        .minimize-btn {
-            background: #ffc107;
-            color: #000;
-        }
-
-        /* 悬浮窗内容 */
-        .floating-content {
-            padding: 20px;
-            max-height: 400px;
-            overflow-y: auto;
-        }
-
-        /* 信息显示 */
-        .info-section {
-            background: #f8f9fa;
-            padding: 12px;
-            border-radius: 5px;
-            margin-bottom: 15px;
-            font-size: 13px;
-        }
-
-        .info-title {
-            font-weight: bold;
-            color: #495057;
-            margin-bottom: 5px;
-        }
-
-        .info-text {
-            color: #6c757d;
-            line-height: 1.4;
-                }
-
-        /* 响应式设计 */
-        @media (max-width: 768px) {
-            .floating-window {
-                width: calc(100vw - 20px);
-            }
-            
-            .floating-window.minimized {
-                right: 10px;
-                bottom: 10px;
-            }
-        }
-    </style>
-</head>
-<body>
-    <!-- 主要内容iframe -->
-    <iframe id="main-iframe" src="https://987ai.vip" title="可屯卡密式充值系统"></iframe>
-
-                <!-- 悬浮窗 -->
-    <div class="floating-window minimized" id="floatingWindow">
-        <!-- 客服图标 -->
-        <div class="customer-service-icon" onclick="toggleMinimize()">💬</div>
-        
-        <div class="floating-header" id="floatingHeader">
-            <span>💳 可屯式卡密自助充值系统</span>
-            <div class="controls">
-                <button class="control-btn minimize-btn" onclick="toggleMinimize(); event.stopPropagation();">最小化</button>
+          <aside class="trust-card" aria-label="安全说明">
+            <div class="trust-icon">
+              <svg viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M12 3 5 6v5c0 4.8 2.9 8.3 7 10 4.1-1.7 7-5.2 7-10V6l-7-3Z"/>
+                <path d="m9 12 2 2 4-4"/>
+              </svg>
             </div>
+            <div>
+              <strong>隐私保护已启用</strong>
+              <p>不写入 URL、localStorage、日志或分析平台。</p>
+            </div>
+          </aside>
         </div>
-            <div class="floating-content" id="floatingContent">
-                <div class="info-section">
-                    <div class="info-title">📞 客服信息</div>
-                    <div class="info-text" style="line-height: 2.2;">
-                        <span style="color: #007bff;">💬 微信: huangdisen</span><br><br>
-                        <a href="https://t.me/JackBlacvk" target="_blank" style="color: #007bff; text-decoration: none;">📱 Telegram: @JackBlacvk</a><br><br>
-                        <a href="https://wa.me/447707324512" target="_blank" style="color: #007bff; text-decoration: none;">📲 WhatsApp: +447707324512</a><br><br>
-                        <a href="mailto:taco.campo_2g@icloud.com" style="color: #007bff; text-decoration: none;">📧 客服邮箱: taco.campo_2g@icloud.com</a>
-                    </div>
+      </section>
+
+      <section class="site-shell service-section" aria-labelledby="service-title">
+        <div class="section-heading">
+          <div>
+            <span class="section-kicker">自助服务</span>
+            <h2 id="service-title">选择要办理的业务</h2>
+          </div>
+          <a class="text-link" href="/api-docs">
+            查看 v1.1 接口说明
+            <svg viewBox="0 0 20 20" aria-hidden="true">
+              <path d="m7 4 6 6-6 6"/>
+            </svg>
+          </a>
+        </div>
+
+        <div class="service-card">
+          <div class="tab-list" role="tablist" aria-label="业务类型">
+            <button
+              id="tab-activation"
+              class="tab-button is-active"
+              type="button"
+              role="tab"
+              aria-selected="true"
+              aria-controls="panel-activation"
+              data-panel="activation"
+            >
+              <svg viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M7 4h10a3 3 0 0 1 3 3v3a3 3 0 0 0 0 4v3a3 3 0 0 1-3 3H7a3 3 0 0 1-3-3v-3a3 3 0 0 0 0-4V7a3 3 0 0 1 3-3Z"/>
+                <path d="M12 8v8M9.5 12h5"/>
+              </svg>
+              <span>
+                <strong>卡密激活</strong>
+                <small>查询并充值</small>
+              </span>
+            </button>
+
+            <button
+              id="tab-refresh"
+              class="tab-button"
+              type="button"
+              role="tab"
+              aria-selected="false"
+              aria-controls="panel-refresh"
+              data-panel="refresh"
+              tabindex="-1"
+            >
+              <svg viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M20 7v5h-5M4 17v-5h5"/>
+                <path d="M6.1 9A7 7 0 0 1 18.8 7M17.9 15A7 7 0 0 1 5.2 17"/>
+              </svg>
+              <span>
+                <strong>订阅刷新</strong>
+                <small>Session / Token</small>
+              </span>
+            </button>
+
+            <button
+              id="tab-claude"
+              class="tab-button"
+              type="button"
+              role="tab"
+              aria-selected="false"
+              aria-controls="panel-claude"
+              data-panel="claude"
+              tabindex="-1"
+            >
+              <svg viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M8 4h8l4 4v8l-4 4H8l-4-4V8l4-4Z"/>
+                <path d="M9 12h6M12 9v6"/>
+              </svg>
+              <span>
+                <strong>Claude 刷新</strong>
+                <small>卡密 + SessionKey</small>
+              </span>
+            </button>
+
+            <button
+              id="tab-batch"
+              class="tab-button"
+              type="button"
+              role="tab"
+              aria-selected="false"
+              aria-controls="panel-batch"
+              data-panel="batch"
+              tabindex="-1"
+            >
+              <svg viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M7 7h13v13H7zM4 4h13v3M4 4v13h3"/>
+              </svg>
+              <span>
+                <strong>批量操作</strong>
+                <small>查询与换卡</small>
+              </span>
+            </button>
+          </div>
+
+          <div class="panel-stack">
+            <section
+              id="panel-activation"
+              class="service-panel"
+              role="tabpanel"
+              data-panel-content="activation"
+              aria-labelledby="tab-activation"
+            >
+              <div class="panel-heading">
+                <span class="step-label">步骤 1</span>
+                <h3>查询卡密与产品状态</h3>
+                <p>卡密区分大小写；不会通过 URL 传递。</p>
+              </div>
+
+              <form id="card-check-form" method="post" novalidate>
+                <div class="field-group">
+                  <label for="activation-card">卡密</label>
+                  <div class="secret-field">
+                    <input
+                      id="activation-card"
+                      type="password"
+                      maxlength="256"
+                      autocomplete="off"
+                      autocapitalize="none"
+                      spellcheck="false"
+                      data-sensitive
+                      required
+                    >
+                    <button
+                      class="field-action"
+                      type="button"
+                      data-toggle-secret="activation-card"
+                      aria-pressed="false"
+                    >显示</button>
+                  </div>
+                  <p class="field-hint">请完整粘贴，不要改变字母大小写。</p>
                 </div>
-            </div>
+                <button class="primary-button" type="submit">
+                  查询卡密
+                  <svg viewBox="0 0 20 20" aria-hidden="true">
+                    <path d="m7 4 6 6-6 6"/>
+                  </svg>
+                </button>
+              </form>
+
+              <div
+                id="card-check-status"
+                class="status-message"
+                role="status"
+                aria-live="polite"
+                hidden
+              ></div>
+
+              <section id="card-summary" class="result-card" hidden>
+                <div class="result-card-header">
+                  <div>
+                    <span class="step-label">查询结果</span>
+                    <h4>产品信息</h4>
+                  </div>
+                  <span id="service-status" class="inline-badge">尚未检查</span>
+                </div>
+                <div id="card-summary-details"></div>
+              </section>
+
+              <form id="activation-form" class="follow-up-form" method="post" novalidate hidden>
+                <div class="panel-heading compact">
+                  <span class="step-label">步骤 2</span>
+                  <h3>填写目标账户信息</h3>
+                  <p>根据产品提示选择一种凭证类型，不要同时提交。</p>
+                </div>
+
+                <fieldset class="choice-fieldset">
+                  <legend>凭证类型</legend>
+                  <label class="choice-card">
+                    <input
+                      type="radio"
+                      name="activation-credential-type"
+                      value="session"
+                      checked
+                    >
+                    <span>
+                      <strong>Session / Token</strong>
+                      <small>适用于 ChatGPT、Claude 等凭证型产品</small>
+                    </span>
+                  </label>
+                  <label class="choice-card">
+                    <input
+                      type="radio"
+                      name="activation-credential-type"
+                      value="uid"
+                    >
+                    <span>
+                      <strong>用户或账户 ID</strong>
+                      <small>仅在产品明确要求 UID、Account ID 时选择</small>
+                    </span>
+                  </label>
+                </fieldset>
+
+                <div id="activation-session-group">
+                  <div class="field-group">
+                    <label for="activation-format">凭证格式</label>
+                    <select id="activation-format">
+                      <option value="text">纯文本 Session / Token</option>
+                      <option value="json">JSON 对象</option>
+                    </select>
+                  </div>
+                  <div class="field-group">
+                    <label for="activation-session">Session / Token</label>
+                    <div class="secret-field">
+                      <input
+                        id="activation-session"
+                        type="password"
+                        maxlength="32768"
+                        autocomplete="off"
+                        autocapitalize="none"
+                        spellcheck="false"
+                        data-sensitive
+                      >
+                      <button
+                        class="field-action"
+                        type="button"
+                        data-toggle-secret="activation-session"
+                        aria-pressed="false"
+                      >显示</button>
+                    </div>
+                    <p class="field-hint">对象型凭证请选择 JSON；提交后立即清空。</p>
+                  </div>
+                </div>
+
+                <div id="activation-uid-group" class="field-group" hidden>
+                  <label for="activation-uid">用户或账户 ID</label>
+                  <input
+                    id="activation-uid"
+                    type="text"
+                    maxlength="1024"
+                    autocomplete="off"
+                    autocapitalize="none"
+                    spellcheck="false"
+                    data-sensitive
+                  >
+                </div>
+
+                <label class="confirm-row">
+                  <input id="activation-owner-confirm" type="checkbox">
+                  <span>我确认这是本人要充值的目标账户凭证。</span>
+                </label>
+
+                <button class="primary-button" type="submit">
+                  检查并确认激活
+                  <svg viewBox="0 0 20 20" aria-hidden="true">
+                    <path d="m7 4 6 6-6 6"/>
+                  </svg>
+                </button>
+              </form>
+
+              <div
+                id="activation-status"
+                class="status-message"
+                role="status"
+                aria-live="polite"
+                hidden
+              ></div>
+            </section>
+
+            <section
+              id="panel-refresh"
+              class="service-panel"
+              role="tabpanel"
+              data-panel-content="refresh"
+              aria-labelledby="tab-refresh"
+              hidden
+            >
+              <div class="panel-heading">
+                <span class="step-label">普通订阅</span>
+                <h3>刷新订阅信息</h3>
+                <p>适用于 ChatGPT 等使用 Session 或 Token 的产品，此接口不需要卡密。</p>
+              </div>
+
+              <form id="refresh-form" method="post" novalidate>
+                <div class="field-group">
+                  <label for="refresh-format">凭证格式</label>
+                  <select id="refresh-format">
+                    <option value="text">纯文本 Session / Token</option>
+                    <option value="json">JSON 对象</option>
+                  </select>
+                </div>
+
+                <div class="field-group">
+                  <label for="refresh-session">Session / Token</label>
+                  <textarea
+                    id="refresh-session"
+                    rows="6"
+                    maxlength="32768"
+                    autocomplete="off"
+                    autocapitalize="none"
+                    spellcheck="false"
+                    data-sensitive
+                    required
+                  ></textarea>
+                  <p class="field-hint">提交完成后，本输入框会立即清空。</p>
+                </div>
+
+                <label class="confirm-row">
+                  <input id="refresh-owner-confirm" type="checkbox">
+                  <span>我确认这是本人账户的完整凭证。</span>
+                </label>
+
+                <button class="primary-button" type="submit">
+                  刷新订阅
+                  <svg viewBox="0 0 20 20" aria-hidden="true">
+                    <path d="m7 4 6 6-6 6"/>
+                  </svg>
+                </button>
+              </form>
+
+              <div
+                id="refresh-status"
+                class="status-message"
+                role="status"
+                aria-live="polite"
+                hidden
+              ></div>
+            </section>
+
+            <section
+              id="panel-claude"
+              class="service-panel"
+              role="tabpanel"
+              data-panel-content="claude"
+              aria-labelledby="tab-claude"
+              hidden
+            >
+              <div class="panel-heading">
+                <span class="step-label">Claude 产品</span>
+                <h3>验证卡密并刷新订阅</h3>
+                <p>系统会先确认卡密属于 Claude 产品，再提交 SessionKey。</p>
+              </div>
+
+              <form id="claude-form" method="post" novalidate>
+                <div class="field-group">
+                  <label for="claude-card">Claude 卡密</label>
+                  <div class="secret-field">
+                    <input
+                      id="claude-card"
+                      type="password"
+                      maxlength="256"
+                      autocomplete="off"
+                      autocapitalize="none"
+                      spellcheck="false"
+                      data-sensitive
+                      required
+                    >
+                    <button
+                      class="field-action"
+                      type="button"
+                      data-toggle-secret="claude-card"
+                      aria-pressed="false"
+                    >显示</button>
+                  </div>
+                </div>
+
+                <div class="field-group">
+                  <label for="claude-format">凭证格式</label>
+                  <select id="claude-format">
+                    <option value="text">纯文本 SessionKey</option>
+                    <option value="json">JSON 对象</option>
+                  </select>
+                </div>
+
+                <div class="field-group">
+                  <label for="claude-session">Claude SessionKey / 凭证对象</label>
+                  <div class="secret-field">
+                    <input
+                      id="claude-session"
+                      type="password"
+                      maxlength="32768"
+                      autocomplete="off"
+                      autocapitalize="none"
+                      spellcheck="false"
+                      placeholder="通常以 sk-ant-sid 开头"
+                      data-sensitive
+                      required
+                    >
+                    <button
+                      class="field-action"
+                      type="button"
+                      data-toggle-secret="claude-session"
+                      aria-pressed="false"
+                    >显示</button>
+                  </div>
+                </div>
+
+                <label class="confirm-row">
+                  <input id="claude-owner-confirm" type="checkbox">
+                  <span>我确认卡密和 SessionKey 均用于本人 Claude 账户。</span>
+                </label>
+
+                <button class="primary-button" type="submit">
+                  验证并刷新
+                  <svg viewBox="0 0 20 20" aria-hidden="true">
+                    <path d="m7 4 6 6-6 6"/>
+                  </svg>
+                </button>
+              </form>
+
+              <div
+                id="claude-status"
+                class="status-message"
+                role="status"
+                aria-live="polite"
+                hidden
+              ></div>
+            </section>
+
+            <section
+              id="panel-batch"
+              class="service-panel"
+              role="tabpanel"
+              data-panel-content="batch"
+              aria-labelledby="tab-batch"
+              hidden
+            >
+              <div class="panel-heading">
+                <div class="heading-row">
+                  <span class="step-label">批量查询与换卡</span>
+                  <span id="batch-config-status" class="inline-badge">检查配置中</span>
+                </div>
+                <h3>hCaptcha 配置完成后开放</h3>
+                <p id="batch-action"></p>
+              </div>
+
+              <div class="notice-card warning-notice">
+                <svg viewBox="0 0 24 24" aria-hidden="true">
+                  <path d="M12 3 2.5 20h19L12 3Z"/>
+                  <path d="M12 9v5M12 17h.01"/>
+                </svg>
+                <div>
+                  <strong>当前不会发送批量请求</strong>
+                  <p>
+                    文档要求每次批量查询或换卡都提交有效的一次性 hCaptcha Token。
+                    在获得官方 sitekey 并登记生产域名前，保持禁用可避免误操作。
+                  </p>
+                </div>
+              </div>
+
+              <div class="endpoint-grid" aria-label="批量接口限制">
+                <div>
+                  <strong>最多 50 张</strong>
+                  <span>精确去重并保留大小写</span>
+                </div>
+                <div>
+                  <strong>逐项判断</strong>
+                  <span>不能只看最外层 success</span>
+                </div>
+                <div>
+                  <strong>换卡不重试</strong>
+                  <span>新卡生成后旧卡立即失效</span>
+                </div>
+              </div>
+            </section>
+          </div>
         </div>
+      </section>
 
-    <!-- 背景遮罩 -->
-    <div class="backdrop" id="backdrop"></div>
+      <section class="site-shell support-section" aria-labelledby="support-title">
+        <div>
+          <span class="section-kicker">人工协助</span>
+          <h2 id="support-title">遇到结果不确定，请停止重试</h2>
+          <p>
+            若出现 <code>upstream.uncertain</code>、网络中断或服务端异常，
+            请保留发生时间并联系客服核查。
+          </p>
+        </div>
+        <div class="support-links">
+          <span>微信：huangdisen</span>
+          <a href="https://t.me/JackBlacvk" target="_blank" rel="noreferrer noopener">Telegram</a>
+          <a href="https://wa.me/447707324512" target="_blank" rel="noreferrer noopener">WhatsApp</a>
+          <a href="mailto:taco.campo_2g@icloud.com">邮件</a>
+        </div>
+      </section>
+    </main>
 
-    <script>
-        const floatingWindow = document.getElementById('floatingWindow');
-        const backdrop = document.getElementById('backdrop');
+    <footer class="site-footer">
+      <div class="site-shell footer-inner">
+        <p>可屯式卡密自助服务 · API v1.1 · 文档更新于 2026-08-24</p>
+        <p>敏感信息仅在当前页面内存中短暂使用。</p>
+      </div>
+    </footer>
 
-        // 为最小化状态的窗口添加点击事件
-        floatingWindow.addEventListener('click', function(e) {
-            if (floatingWindow.classList.contains('minimized')) {
-                e.stopPropagation();
-                toggleMinimize();
-            } else {
-                // 展开状态下点击窗口内容不关闭
-                e.stopPropagation();
-            }
-        });
-
-        // 点击遮罩关闭导航栏
-        backdrop.addEventListener('click', function() {
-            if (!floatingWindow.classList.contains('minimized')) {
-                toggleMinimize();
-            }
-        });
-
-        // 最小化功能
-        function toggleMinimize() {
-            const window = document.getElementById('floatingWindow');
-            
-            if (window.classList.contains('minimized')) {
-                window.classList.remove('minimized');
-            } else {
-                window.classList.add('minimized');
-            }
-        }
-
-
-
-
-
-
-
-
-
-        // 动态处理URL参数
-        function updateIframeSrc() {
-            const iframe = document.getElementById('main-iframe');
-            const currentUrl = window.location.href;
-            const baseUrl = 'https://987ai.vip';
-            
-            // 获取当前页面的路径和查询参数
-            const urlPath = window.location.pathname;
-            const urlSearch = window.location.search;
-            
-            // 构建新的iframe src
-            let newSrc = baseUrl;
-            
-            // 如果有路径且不是根路径，添加路径
-            if (urlPath && urlPath !== '/') {
-                newSrc += urlPath;
-            }
-            
-            // 如果有查询参数，添加查询参数
-            if (urlSearch) {
-                newSrc += urlSearch;
-            }
-            
-            iframe.src = newSrc;
-        }
-
-        // 页面加载完成提示
-        window.addEventListener('load', () => {
-            updateIframeSrc();
-            console.log('可屯式卡密自助充值系统加载完成');
-            console.log('点击右下角客服图标展开系统面板，点击遮罩或最小化按钮关闭');
-        });
-    </script>
-</body>
-</html> 
+    <dialog id="activation-dialog" class="confirm-dialog" aria-labelledby="dialog-title">
+      <form method="dialog">
+        <div class="dialog-icon">
+          <svg viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M12 3 2.5 20h19L12 3Z"/>
+            <path d="M12 9v5M12 17h.01"/>
+          </svg>
+        </div>
+        <h2 id="dialog-title">确认提交激活</h2>
+        <p>激活为同步操作。发生超时或断网时，请勿重复提交。</p>
+        <div id="activation-dialog-summary"></div>
+        <label class="confirm-row dialog-confirm">
+          <input id="activation-final-confirm" type="checkbox">
+          <span>我已核对产品与目标账户，并确认继续。</span>
+        </label>
+        <div class="dialog-actions">
+          <button id="activation-dialog-cancel" class="secondary-button" type="button">返回检查</button>
+          <button id="activation-dialog-submit" class="danger-button" type="button" disabled>确认激活</button>
+        </div>
+      </form>
+    </dialog>
+  </body>
+</html>

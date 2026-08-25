@@ -1,588 +1,177 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="zh-CN">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>卡密链接生成工具</title>
-    <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="referrer" content="no-referrer">
+    <meta name="robots" content="noindex,nofollow,noarchive">
+    <meta
+      name="description"
+      content="不把完整卡密放入 URL 的本地安全卡密工具。"
+    >
+    <title>安全卡密工具 · 可屯式卡密</title>
+    <script src="/assets/sanitize-url.js"></script>
+    <link rel="stylesheet" href="/assets/styles.css">
+    <script type="module" src="/assets/card-tool.js"></script>
+  </head>
+  <body>
+    <a class="skip-link" href="#main-content">跳到主要内容</a>
 
-        body {
-            font-family: 'Microsoft YaHei', Arial, sans-serif;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            min-height: 100vh;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            padding: 20px;
-        }
+    <header class="site-header">
+      <div class="site-shell header-inner">
+        <a class="brand" href="/" aria-label="返回可屯式卡密首页">
+          <svg viewBox="0 0 32 32" aria-hidden="true">
+            <path d="M6 7.5A3.5 3.5 0 0 1 9.5 4h13A3.5 3.5 0 0 1 26 7.5v3.1a3.3 3.3 0 0 0 0 6.8v3.1a3.5 3.5 0 0 1-3.5 3.5h-13A3.5 3.5 0 0 1 6 20.5v-3.1a3.3 3.3 0 0 0 0-6.8V7.5Z"/>
+            <path d="M13 9v14M19 9v14"/>
+          </svg>
+          <span>
+            <strong>可屯式卡密</strong>
+            <small>安全自助服务</small>
+          </span>
+        </a>
 
-        .container {
-            background: rgba(255, 255, 255, 0.95);
-            border-radius: 20px;
-            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
-            padding: 40px;
-            max-width: 500px;
-            width: 100%;
-            backdrop-filter: blur(10px);
-            border: 1px solid rgba(255, 255, 255, 0.3);
-        }
+        <nav class="header-nav" aria-label="主导航">
+          <a href="/">自助服务</a>
+          <a href="/api-docs">API 文档</a>
+          <a aria-current="page" href="/card-tool">卡密工具</a>
+        </nav>
+      </div>
+    </header>
 
-        .title {
-            text-align: center;
-            color: #333;
-            margin-bottom: 30px;
-            font-size: 24px;
-            font-weight: bold;
-        }
-
-        .subtitle {
-            text-align: center;
-            color: #666;
-            margin-bottom: 30px;
-            font-size: 14px;
-        }
-
-        .input-group {
-            margin-bottom: 25px;
-        }
-
-        label {
-            display: block;
-            margin-bottom: 8px;
-            color: #555;
-            font-weight: bold;
-        }
-
-        input[type="text"] {
-            width: 100%;
-            padding: 15px;
-            border: 2px solid #e1e1e1;
-            border-radius: 10px;
-            font-size: 16px;
-            transition: all 0.3s ease;
-            background: #f9f9f9;
-        }
-
-        input[type="text"]:focus {
-            outline: none;
-            border-color: #667eea;
-            background: white;
-            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
-        }
-
-        textarea {
-            width: 100%;
-            padding: 15px;
-            border: 2px solid #e1e1e1;
-            border-radius: 10px;
-            font-size: 16px;
-            transition: all 0.3s ease;
-            background: #f9f9f9;
-            font-family: 'Microsoft YaHei', Arial, sans-serif;
-            resize: vertical;
-            min-height: 120px;
-        }
-
-        textarea:focus {
-            outline: none;
-            border-color: #667eea;
-            background: white;
-            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
-        }
-
-        .tab-buttons {
-            display: flex;
-            margin-bottom: 25px;
-            border-radius: 10px;
-            overflow: hidden;
-            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
-        }
-
-        .tab-btn {
-            flex: 1;
-            padding: 12px 20px;
-            border: none;
-            background: #f8f9fa;
-            color: #666;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            font-size: 14px;
-            font-weight: bold;
-        }
-
-        .tab-btn.active {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-        }
-
-        .tab-btn:hover:not(.active) {
-            background: #e9ecef;
-        }
-
-        .tab-content {
-            display: none;
-        }
-
-        .tab-content.active {
-            display: block;
-            animation: fadeIn 0.3s ease;
-        }
-
-        @keyframes fadeIn {
-            from { opacity: 0; }
-            to { opacity: 1; }
-        }
-
-        .generate-btn {
-            width: 100%;
-            padding: 15px;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-            border: none;
-            border-radius: 10px;
-            font-size: 16px;
-            font-weight: bold;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            margin-bottom: 20px;
-        }
-
-        .generate-btn:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 10px 25px rgba(102, 126, 234, 0.3);
-        }
-
-        .generate-btn:active {
-            transform: translateY(0);
-        }
-
-        .result-section {
-            margin-top: 25px;
-            padding: 20px;
-            background: #f8f9fa;
-            border-radius: 10px;
-            border: 2px dashed #e1e1e1;
-            display: none;
-        }
-
-        .result-section.show {
-            display: block;
-            animation: slideIn 0.3s ease;
-        }
-
-        @keyframes slideIn {
-            from {
-                opacity: 0;
-                transform: translateY(-10px);
-            }
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
-        }
-
-        .result-label {
-            color: #555;
-            font-weight: bold;
-            margin-bottom: 10px;
-        }
-
-        .result-link {
-            background: white;
-            padding: 15px;
-            border-radius: 8px;
-            border: 1px solid #e1e1e1;
-            word-break: break-all;
-            font-family: 'Courier New', monospace;
-            font-size: 14px;
-            color: #333;
-            position: relative;
-            white-space: pre-wrap;
-            max-height: 300px;
-            overflow-y: auto;
-        }
-
-        .copy-btn {
-            margin-top: 15px;
-            padding: 10px 20px;
-            background: #28a745;
-            color: white;
-            border: none;
-            border-radius: 6px;
-            cursor: pointer;
-            font-size: 14px;
-            transition: all 0.3s ease;
-        }
-
-        .copy-btn:hover {
-            background: #218838;
-        }
-
-        .copy-btn.copied {
-            background: #17a2b8;
-        }
-
-        .footer {
-            text-align: center;
-            margin-top: 30px;
-            color: #999;
-            font-size: 12px;
-        }
-
-        @media (max-width: 768px) {
-            .container {
-                margin: 10px;
-                padding: 30px 20px;
-            }
-            
-            .title {
-                font-size: 20px;
-            }
-        }
-    </style>
-</head>
-<body>
-    <div class="container">
-        <h1 class="title">🎫 卡密链接生成工具</h1>
-        <p class="subtitle">支持单个和批量生成充值链接</p>
-        
-        <div class="tab-buttons">
-            <button class="tab-btn active" onclick="switchTab('single')">单个生成</button>
-            <button class="tab-btn" onclick="switchTab('batch')">域名转换</button>
-            <button class="tab-btn" onclick="switchTab('extract')">批量提取</button>
+    <main id="main-content">
+      <section class="tool-hero">
+        <div class="site-shell">
+          <span class="eyebrow">仅在浏览器本地处理</span>
+          <h1>安全卡密工具</h1>
+          <p>
+            新版工具不再生成包含完整卡密的 URL。所有输入只在当前页面内存中处理，
+            不发送到网络，也不会保存。
+          </p>
         </div>
-        
-        <!-- 单个生成面板 -->
-        <div class="tab-content active" id="singleTab">
-            <div class="input-group">
-                <label for="cardInput">📝 请输入卡密:</label>
-                <input type="text" id="cardInput" placeholder="请输入您的卡密..." maxlength="100">
+      </section>
+
+      <section class="site-shell utility-grid" aria-label="卡密工具">
+        <article class="utility-card">
+          <div class="utility-card-heading">
+            <span class="step-label">安全分享</span>
+            <h2>生成分离式充值信息</h2>
+            <p>充值地址与卡密分行展示，卡密不会出现在网址中。</p>
+          </div>
+
+          <form id="secure-share-form" method="post" novalidate>
+            <div class="field-group">
+              <label for="tool-card">卡密</label>
+              <div class="secret-field">
+                <input
+                  id="tool-card"
+                  type="password"
+                  maxlength="256"
+                  autocomplete="off"
+                  autocapitalize="none"
+                  spellcheck="false"
+                  data-sensitive
+                  required
+                >
+                <button
+                  class="field-action"
+                  type="button"
+                  data-toggle-secret="tool-card"
+                  aria-pressed="false"
+                >显示</button>
+              </div>
             </div>
-            
-            <button class="generate-btn" onclick="generateLink()">
-                🔗 生成充值链接
-            </button>
-        </div>
-        
-        <!-- 域名转换面板 -->
-        <div class="tab-content" id="batchTab">
-            <div class="input-group">
-                <label for="batchInput">📝 请输入任意域名的充值链接 (每行一个):</label>
-                <textarea id="batchInput" placeholder="请输入充值链接，每行一个...&#10;例如:&#10;example.com/recharge?card=ABC123&#10;https://old-site.com/recharge?card=DEF456&#10;another-domain.net/recharge?card=GHI789" rows="6"></textarea>
+
+            <button class="primary-button" type="submit">生成安全信息</button>
+          </form>
+
+          <div
+            id="share-status"
+            class="status-message"
+            role="status"
+            aria-live="polite"
+            hidden
+          ></div>
+
+          <section id="share-result" class="sensitive-result" hidden>
+            <div class="sensitive-result-heading">
+              <strong>待复制内容</strong>
+              <span>包含完整卡密，请谨慎发送</span>
             </div>
-            
-            <button class="generate-btn" onclick="convertDomainLinks()">
-                🔄 转换为新域名
+            <pre id="share-output"></pre>
+            <button class="secondary-button" type="button" data-copy-target="share-output">
+              复制内容
             </button>
-        </div>
-        
-        <!-- 批量提取面板 -->
-        <div class="tab-content" id="extractTab">
-            <div class="input-group">
-                <label for="extractInput">📝 请输入充值链接 (每行一个):</label>
-                <textarea id="extractInput" placeholder="请输入充值链接，每行一个...&#10;例如:&#10;new.bearaiapp.com/recharge?card=ABC123456&#10;https://example.com/recharge?card=DEF789012&#10;domain.com/recharge?card=GHI345678" rows="6"></textarea>
+          </section>
+        </article>
+
+        <article class="utility-card">
+          <div class="utility-card-heading">
+            <span class="step-label">旧链接迁移</span>
+            <h2>从旧链接提取卡密</h2>
+            <p>每行一个旧链接。仅提取 card 参数，不生成新的卡密 URL。</p>
+          </div>
+
+          <form id="legacy-extract-form" method="post" novalidate>
+            <div class="field-group">
+              <label for="legacy-links">旧充值链接</label>
+              <textarea
+                id="legacy-links"
+                rows="8"
+                autocomplete="off"
+                autocapitalize="none"
+                spellcheck="false"
+                placeholder="https://旧域名/recharge?card=..."
+                data-sensitive
+                required
+              ></textarea>
             </div>
-            
-            <button class="generate-btn" onclick="extractCards()">
-                🔍 提取卡密
+
+            <button class="primary-button" type="submit">本地提取卡密</button>
+          </form>
+
+          <div
+            id="extract-status"
+            class="status-message"
+            role="status"
+            aria-live="polite"
+            hidden
+          ></div>
+
+          <section id="extract-result" class="sensitive-result" hidden>
+            <div class="sensitive-result-heading">
+              <strong>提取结果</strong>
+              <span>已按原始大小写精确去重</span>
+            </div>
+            <pre id="extract-output"></pre>
+            <button class="secondary-button" type="button" data-copy-target="extract-output">
+              复制全部卡密
             </button>
+          </section>
+        </article>
+      </section>
+
+      <section class="site-shell migration-notice">
+        <div class="notice-card warning-notice">
+          <svg viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M12 3 2.5 20h19L12 3Z"/>
+            <path d="M12 9v5M12 17h.01"/>
+          </svg>
+          <div>
+            <strong>旧链接无法撤销既有日志记录</strong>
+            <p>
+              如果卡密曾放入 URL，它可能已经进入浏览器历史或托管访问日志。
+              提取完成后，请停止继续传播旧链接。
+            </p>
+          </div>
         </div>
-        
-        <div class="result-section" id="resultSection">
-            <div class="result-label">🎯 生成的充值链接:</div>
-            <div class="result-link" id="resultLink"></div>
-            <button class="copy-btn" id="copyBtn" onclick="copyLink()">
-                📋 复制链接
-            </button>
-        </div>
-        
-        <div class="footer">
-            💳 可屯式卡密自助充值系统 | 安全便捷的充值服务
-        </div>
-    </div>
+      </section>
+    </main>
 
-    <script>
-        const cardInput = document.getElementById('cardInput');
-        const batchInput = document.getElementById('batchInput');
-        const extractInput = document.getElementById('extractInput');
-        const resultSection = document.getElementById('resultSection');
-        const resultLink = document.getElementById('resultLink');
-        const copyBtn = document.getElementById('copyBtn');
-
-        // 回车键快速生成
-        cardInput.addEventListener('keypress', function(e) {
-            if (e.key === 'Enter') {
-                generateLink();
-            }
-        });
-
-        // 输入时重置复制按钮状态
-        cardInput.addEventListener('input', resetCopyButton);
-        batchInput.addEventListener('input', resetCopyButton);
-        extractInput.addEventListener('input', resetCopyButton);
-
-        function resetCopyButton() {
-            copyBtn.textContent = '📋 复制链接';
-            copyBtn.className = 'copy-btn';
-        }
-
-        // 选项卡切换功能
-        function switchTab(tabName) {
-            // 更新按钮状态
-            document.querySelectorAll('.tab-btn').forEach(btn => {
-                btn.classList.remove('active');
-            });
-            event.target.classList.add('active');
-
-            // 更新内容面板
-            document.querySelectorAll('.tab-content').forEach(content => {
-                content.classList.remove('active');
-            });
-            
-            if (tabName === 'single') {
-                document.getElementById('singleTab').classList.add('active');
-            } else if (tabName === 'batch') {
-                document.getElementById('batchTab').classList.add('active');
-            } else if (tabName === 'extract') {
-                document.getElementById('extractTab').classList.add('active');
-            }
-
-            // 隐藏结果区域
-            resultSection.classList.remove('show');
-        }
-
-        function generateLink() {
-            const cardValue = cardInput.value.trim();
-            
-            if (!cardValue) {
-                alert('⚠️ 请输入卡密！');
-                cardInput.focus();
-                return;
-            }
-
-            // 生成链接
-            const baseUrl = 'new.bearaiapp.com/recharge';
-            const fullLink = `${baseUrl}?card=${encodeURIComponent(cardValue)}`;
-            
-            // 显示结果
-            resultLink.textContent = fullLink;
-            resultSection.classList.add('show');
-            
-            // 更新标签和按钮文本
-            document.querySelector('.result-label').textContent = '🎯 生成的充值链接:';
-            copyBtn.textContent = '📋 复制链接';
-            copyBtn.className = 'copy-btn';
-        }
-
-        function convertDomainLinks() {
-            const batchValue = batchInput.value.trim();
-            
-            if (!batchValue) {
-                alert('⚠️ 请输入充值链接！');
-                batchInput.focus();
-                return;
-            }
-
-            // 按行分割链接
-            const urls = batchValue.split('\n')
-                .map(url => url.trim())
-                .filter(url => url.length > 0);
-
-            if (urls.length === 0) {
-                alert('⚠️ 请输入有效的链接！');
-                return;
-            }
-
-            // 转换所有链接
-            const convertedLinks = [];
-            const failedUrls = [];
-            const newDomain = 'new.bearaiapp.com';
-
-            urls.forEach((url, index) => {
-                try {
-                    // 处理各种格式的URL
-                    let processedUrl = url;
-                    
-                    // 如果没有协议，添加https://
-                    if (!processedUrl.startsWith('http://') && !processedUrl.startsWith('https://')) {
-                        processedUrl = 'https://' + processedUrl;
-                    }
-
-                    // 使用URL API解析
-                    const urlObj = new URL(processedUrl);
-                    const cardParam = urlObj.searchParams.get('card');
-
-                    if (cardParam) {
-                        // 生成新的链接
-                        const newLink = `${newDomain}/recharge?card=${encodeURIComponent(cardParam)}`;
-                        convertedLinks.push(newLink);
-                    } else {
-                        failedUrls.push(`第${index + 1}行: 未找到card参数`);
-                    }
-                } catch (error) {
-                    // 备用方法：使用正则表达式
-                    const match = url.match(/[?&]card=([^&]*)/i);
-                    if (match) {
-                        const cardValue = decodeURIComponent(match[1]);
-                        const newLink = `${newDomain}/recharge?card=${encodeURIComponent(cardValue)}`;
-                        convertedLinks.push(newLink);
-                    } else {
-                        failedUrls.push(`第${index + 1}行: 格式错误或无card参数`);
-                    }
-                }
-            });
-
-            // 显示结果
-            if (convertedLinks.length > 0) {
-                const resultText = convertedLinks.join('\n');
-                resultLink.textContent = resultText;
-                resultSection.classList.add('show');
-                
-                // 更新标签和按钮文本
-                document.querySelector('.result-label').textContent = '🎯 转换后的充值链接:';
-                copyBtn.textContent = `📋 复制全部 (${convertedLinks.length}条)`;
-                copyBtn.className = 'copy-btn';
-
-                // 如果有失败的链接，显示警告
-                if (failedUrls.length > 0) {
-                    setTimeout(() => {
-                        alert(`✅ 成功转换 ${convertedLinks.length} 个链接\n❌ 失败 ${failedUrls.length} 个链接:\n\n${failedUrls.join('\n')}`);
-                    }, 100);
-                }
-            } else {
-                alert('❌ 没有找到任何有效的充值链接！\n\n请确保链接格式正确，包含 /recharge?card= 参数。');
-            }
-        }
-
-        function extractCards() {
-            const extractValue = extractInput.value.trim();
-            
-            if (!extractValue) {
-                alert('⚠️ 请输入充值链接！');
-                extractInput.focus();
-                return;
-            }
-
-            // 按行分割链接
-            const urls = extractValue.split('\n')
-                .map(url => url.trim())
-                .filter(url => url.length > 0);
-
-            if (urls.length === 0) {
-                alert('⚠️ 请输入有效的链接！');
-                return;
-            }
-
-            // 提取卡密
-            const cards = [];
-            const failedUrls = [];
-
-            urls.forEach((url, index) => {
-                try {
-                    // 处理各种格式的URL
-                    let processedUrl = url;
-                    
-                    // 如果没有协议，添加https://
-                    if (!processedUrl.startsWith('http://') && !processedUrl.startsWith('https://')) {
-                        processedUrl = 'https://' + processedUrl;
-                    }
-
-                    // 使用URL API解析
-                    const urlObj = new URL(processedUrl);
-                    const cardParam = urlObj.searchParams.get('card');
-
-                    if (cardParam) {
-                        cards.push(decodeURIComponent(cardParam));
-                    } else {
-                        failedUrls.push(`第${index + 1}行: 未找到card参数`);
-                    }
-                } catch (error) {
-                    // 备用方法：使用正则表达式
-                    const match = url.match(/[?&]card=([^&]*)/i);
-                    if (match) {
-                        cards.push(decodeURIComponent(match[1]));
-                    } else {
-                        failedUrls.push(`第${index + 1}行: 格式错误或无card参数`);
-                    }
-                }
-            });
-
-            // 显示结果
-            if (cards.length > 0) {
-                const resultText = cards.join('\n');
-                resultLink.textContent = resultText;
-                resultSection.classList.add('show');
-                
-                // 更新标签和按钮文本
-                document.querySelector('.result-label').textContent = '🎯 提取的卡密:';
-                copyBtn.textContent = `📋 复制全部卡密 (${cards.length}条)`;
-                copyBtn.className = 'copy-btn';
-
-                // 如果有失败的链接，显示警告
-                if (failedUrls.length > 0) {
-                    setTimeout(() => {
-                        alert(`✅ 成功提取 ${cards.length} 个卡密\n❌ 失败 ${failedUrls.length} 个链接:\n\n${failedUrls.join('\n')}`);
-                    }, 100);
-                }
-            } else {
-                alert('❌ 没有找到任何有效的卡密！\n\n请确保链接格式正确，包含 /recharge?card= 参数。');
-            }
-        }
-
-        function copyLink() {
-            const linkText = resultLink.textContent;
-            
-            // 尝试使用现代API复制
-            if (navigator.clipboard) {
-                navigator.clipboard.writeText(linkText).then(() => {
-                    showCopySuccess();
-                }).catch(() => {
-                    fallbackCopy(linkText);
-                });
-            } else {
-                fallbackCopy(linkText);
-            }
-        }
-
-        function fallbackCopy(text) {
-            // 备用复制方法
-            const textArea = document.createElement('textarea');
-            textArea.value = text;
-            textArea.style.position = 'fixed';
-            textArea.style.opacity = '0';
-            document.body.appendChild(textArea);
-            textArea.select();
-            
-            try {
-                document.execCommand('copy');
-                showCopySuccess();
-            } catch (err) {
-                alert('❌ 复制失败，请手动复制链接');
-            }
-            
-            document.body.removeChild(textArea);
-        }
-
-        function showCopySuccess() {
-            copyBtn.textContent = '✅ 已复制！';
-            copyBtn.className = 'copy-btn copied';
-            
-            // 3秒后恢复按钮状态
-            setTimeout(() => {
-                copyBtn.textContent = '📋 复制链接';
-                copyBtn.className = 'copy-btn';
-            }, 3000);
-        }
-
-        // 页面加载完成后聚焦到输入框
-        window.addEventListener('load', () => {
-            cardInput.focus();
-        });
-    </script>
-</body>
+    <footer class="site-footer">
+      <div class="site-shell footer-inner">
+        <p>安全卡密工具 · 不上传、不存储、不生成卡密 URL</p>
+        <p><a href="/">返回自助服务</a></p>
+      </div>
+    </footer>
+  </body>
 </html>
